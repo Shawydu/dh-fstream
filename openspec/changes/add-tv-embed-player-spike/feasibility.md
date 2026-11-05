@@ -125,3 +125,24 @@ All qualities (SD, HD, FHD, ...) stay available, SD listed first by default; no 
 Four valid trials across 3 events, HD streams, no OK pressed, stream-OK to CDP `currentTime` advancing: 34.0 s (1080p), 23.2 s (1080p), 26.3 s (720p), 32.1 s (1080p); mean about 29 s. A fifth trial (2.3 s) is discarded: its frame counters showed over 48 s of prior playback, so the probe hit a stale video. Auto-start tap fired in every trial (no OK needed); the 1500 ms settle delay is not the bottleneck (embed page load and stream start dominate), so it stays at 1500 ms. Screenshots failed to save in this run, so popups, double-tap side effects and Back/audio-stop were not re-verified; the HUD in a1 showed popups 0 and no pause toggle.
 
 Check 1 (start <= 10 s): FAIL. Auto-start removes the need to press OK but start time is 23-34 s on this network/device.
+
+## Auto-start re-run (2026-11-04)
+
+Setup: build with iframe-wrapper removed, real UI path (Home Live list -> event -> Stream 1 -> OK), no OK inside the player, CDP read-only probe (about 1 to 3 s polling error; time = stream OK to paused=false with readyState 4). SD streams were "not live yet" for every live event, so all trials used Stream 1 (HD/FHD, 1080p except Ball State at 720p). Events: Sky Sports F1, Willow, Sky Sports Cricket, Sky Sports Tennis, Ball State v Massachusetts. Two earlier attempts were discarded because two drivers ran at once and adb dropped.
+
+| Trial | Event | Delay | Stream OK to playing (s) |
+|---|---|---|---|
+| r1 | Sky Sports F1 | 1500 ms | 15.5 |
+| r2 | Sky Sports Cricket | 1500 ms | 17.2 |
+| r3 | Sky Sports Tennis | 1500 ms | 16.4 |
+| r4 | Ball State v Massachusetts (720p) | 1500 ms | 23.8 |
+| r5 | Willow | 1500 ms | 17.5 |
+| f1 | Sky Sports F1 | 800 ms | 13.1 |
+| f2 | Sky Sports Cricket | 800 ms | 18.4 |
+| f3 | Sky Sports Tennis | 800 ms | 15.0 |
+
+Median 1500 ms: 17.2 s. Median 800 ms: 15.0 s (3 trials, no missed taps, every trial started without OK). Final `AUTO_START_DELAY_MS = 800`. HUD on f3: "auto-start tap", state playing, ttff 10.8 s from player launch.
+
+Check 1 (start <= 10 s): FAIL on these HD/FHD streams (median 15 to 17 s). The 800 ms delay saves under 1 s; the time is dominated by page load plus the embed's own player start-up after the tap (video is already moving at 4 to 12 s of currentTime when detected), not by the settle delay. Page-load time (onPageFinished) was not logged separately, so "page load dominates" is inferred, not measured. SD was not live, so the earlier SD result (about 10 to 13 s) was not re-measured.
+
+Back and audio: Back from f3 returned to Streams (focus on Stream 1), and no `state:started` playback configuration remained in `dumpsys audio`. HUD showed popups 0, nav 0, blocked req 0. Not verified: skip of the auto tap when video already autoplays (never occurred), and the effect of a second manual OK (CDP probe returned no video during that test). adb flapped during the run; the TV's mDNS serial was used after the IP serial dropped.
