@@ -1,0 +1,113 @@
+{
+ "count": 4,
+ "streams": [
+  {
+   "id": "philadelphia-76ers-vs-detroit-pistons",
+   "name": "Philadelphia 76ers vs Detroit Pistons",
+   "category": "basketball",
+   "league": "NBA",
+   "stream_key": "philadelphia-76ers-vs-detroit-pistons",
+   "match_timestamp": 1793836800,
+   "viewers": 3229,
+   "is_external": false,
+   "thumbnail_url": "https://streamfree.top/thumbnails/basketball_philadelphia-76ers-vs-detroit-pistons_Philadelphia_76ers_vs_Detroit_",
+   "sources": [
+    {
+     "quality": "FHD",
+     "url": "https://strmfree.st/embed/basketball/philadelphia-76ers-vs-detroit-pistons1080p",
+     "live": true
+    },
+    {
+     "quality": "SD",
+     "url": "https://strmfree.st/embed/basketball/philadelphia-76ers-vs-detroit-pistons540p",
+     "live": false
+    }
+   ],
+   "team1": {
+    "name": "Philadelphia 76ers",
+    "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/phi.png"
+   },
+   "team2": {
+    "name": "Detroit Pistons",
+    "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/det.png"
+   }
+  },
+  {
+   "id": "milwaukee-bucks-vs-boston-celtics",
+   "name": "Milwaukee Bucks vs Boston Celtics",
+   "category": "basketball",
+   "league": "NBA",
+   "stream_key": "milwaukee-bucks-vs-boston-celtics",
+   "match_timestamp": 1793838600,
+   "viewers": 2,
+   "is_external": false,
+   "thumbnail_url": "https://streamfree.top/thumbnails/basketball_milwaukee-bucks-vs-boston-celtics_Milwaukee_Bucks_vs_Boston_Celt",
+   "sources": [
+    {
+     "quality": "FHD",
+     "url": "https://strmfree.st/embed/basketball/milwaukee-bucks-vs-boston-celtics1080p",
+     "live": false
+    },
+    {
+     "quality": "SD",
+     "url": "https://strmfree.st/embed/basketball/milwaukee-bucks-vs-boston-celtics540p",
+     "live": false
+    }
+   ],
+   "team1": {
+    "name": "Milwaukee Bucks",
+    "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/mil.png"
+   },
+   "team2": {
+    "name": "Boston Celtics",
+    "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/bos.png"
+   }
+  },
+  {
+   "id": "dac18f6b-2340-4b28-b4fe-5f4682753764",
+   "name": "RedZone",
+   "category": "football",
+   "league": "NFL",
+   "stream_key": "redzone",
+   "match_timestamp": 1789318200,
+   "viewers": 0,
+   "is_external": false,
+   "thumbnail_url": "https://streamfree.top/thumbnails/football_dac18f6b-2340-4b28-b4fe-5f4682753764_RedZone",
+   "sources": [
+    {
+     "quality": "FHD",
+     "url": "https://strmfree.st/embed/football/redzone1080p",
+     "live": false
+    },
+    {
+     "quality": "SD",
+     "url": "https://strmfree.st/embed/football/redzone540p",
+     "live": false
+    }
+   ]
+  },
+  {
+   "id": "2e10eb11-1329-49b1-b671-c9f1c9a6785a",
+   "name": "Sky Sports F1",
+   "category": "racing",
+   "league": "F1",
+   "stream_key": "skyf1",
+   "match_timestamp": 1782403200,
+   "viewers": 12,
+   "is_external": false,
+   "thumbnail_url": "https://streamfree.top/thumbnails/racing_2e10eb11-1329-49b1-b671-c9f1c9a6785a_Sky_Sports_F1",
+   "sources": [
+    {
+     "quality": "FHD",
+     "url": "https://strmfree.st/embed/racing/skyf11080p",
+     "live": true
+    },
+    {
+     "quality": "SD",
+     "url": "https://strmfree.st/embed/racing/skyf1540p",
+     "live": false
+    }
+   ]
+  }
+ ]
+}

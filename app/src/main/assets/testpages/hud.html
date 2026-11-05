@@ -1,0 +1,9 @@
+<!doctype html><html><head><meta charset="utf-8"><title>hud</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}video{width:100vw;height:100vh}</style></head>
+<body><canvas id="c" width="640" height="360" style="display:none"></canvas>
+<video id="v" muted autoplay playsinline></video>
+<script>
+var c=document.getElementById('c'),x=c.getContext('2d'),n=0;
+setInterval(function(){n++;x.fillStyle='hsl('+(n*3%360)+',80%,50%)';x.fillRect(0,0,640,360);x.fillStyle='#fff';x.font='48px sans-serif';x.fillText(n,40,180);},33);
+var v=document.getElementById('v');v.srcObject=c.captureStream(30);v.play();
+</script></body></html>
