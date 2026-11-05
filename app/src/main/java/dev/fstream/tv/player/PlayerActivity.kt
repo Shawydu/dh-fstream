@@ -22,7 +22,6 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.webkit.WebViewAssetLoader
-import dev.fstream.tv.model.LoadMode
 import dev.fstream.tv.model.PlayableSource
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -31,8 +30,6 @@ import java.net.URI
 class PlayerActivity : ComponentActivity() {
     val stats = PlayerStats()
     lateinit var okStrategies: OkStrategies
-        private set
-    lateinit var effectiveLoadMode: LoadMode
         private set
 
     private lateinit var root: FrameLayout
@@ -59,7 +56,6 @@ class PlayerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val source = Json.decodeFromString<PlayableSource>(intent.getStringExtra(EXTRA_SOURCE)!!)
         options = intent.getStringExtra(EXTRA_OPTIONS)?.let { Json.decodeFromString<PlayerOptions>(it) } ?: PlayerOptions()
-        effectiveLoadMode = options.loadMode ?: source.loadMode ?: LoadMode.TOP_LEVEL
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         window.setDecorFitsSystemWindows(false)
@@ -119,19 +115,10 @@ class PlayerActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this) { handleBack() }
 
         loadStartMs = SystemClock.elapsedRealtime()
-        load(wv, source, embedHost)
+        wv.loadUrl(source.url, source.headers)
         handler.post(ticker)
     }
 
-
-    private fun load(wv: WebView, source: PlayableSource, embedHost: String) {
-        if (effectiveLoadMode == LoadMode.IFRAME_WRAPPER) {
-            val html = wrapperHtml(source.url)
-            wv.loadDataWithBaseURL("https://$embedHost/", html, "text/html", "utf-8", null)
-        } else {
-            wv.loadUrl(source.url, source.headers)
-        }
-    }
 
     // Once-per-load center tap so the viewer doesn't have to press OK; skipped if the probe already sees playing video.
     private val autoStart = Runnable {
@@ -241,26 +228,18 @@ class PlayerActivity : ComponentActivity() {
             append("state: $state").append(errorText?.let { " ($it)" } ?: "").append('\n')
             append("ttff: $ttff  dropped/total: $frames\n")
             append("mem: ${mb}MB  blocked req: ${stats.blockedRequests.get()}  popups: ${stats.blockedPopups.get()}  nav: ${stats.blockedNavigations.get()}\n")
-            append("mode: $effectiveLoadMode  ok: ${options.okStrategy}")
+            append("ok: ${options.okStrategy}")
             if (lastStatus.isNotEmpty()) append("\n").append(lastStatus)
         }
     }
 
     companion object {
-        const val AUTO_START_DELAY_MS = 1500L
+        const val AUTO_START_DELAY_MS = 800L
         const val EXTRA_SOURCE = "source"
         const val EXTRA_TITLE = "title"
         const val EXTRA_OPTIONS = "options"
 
         fun hostOf(url: String): String = runCatching { URI(url).host }.getOrNull() ?: ""
-
-        fun wrapperHtml(embedUrl: String): String {
-            val esc = embedUrl.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;")
-            return """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>html,body{margin:0;padding:0;background:#000;overflow:hidden}</style></head><body>
-<iframe src="$esc" allow="autoplay; fullscreen; encrypted-media" allowfullscreen style="border:0;width:100vw;height:100vh"></iframe>
-</body></html>"""
-        }
 
         fun intent(context: Context, source: PlayableSource, title: String, options: PlayerOptions = PlayerOptions()): Intent {
             val intent = Intent(context, PlayerActivity::class.java)

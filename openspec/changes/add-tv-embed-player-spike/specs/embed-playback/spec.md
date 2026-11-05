@@ -58,7 +58,7 @@ Each playback session SHALL fully stop audio and video when closed. Memory use S
 - **THEN** no audio continues after closing and app memory stays within 10% of the first session
 
 ### Requirement: Embed Lab diagnostics
-The system SHALL provide a diagnostics screen for loading any embed URL with a selectable load mode (top-level or iframe-wrapper), popup/ad blocking toggles, and an OK-key strategy. It SHALL display a HUD with player state, time to first frame, dropped/total frames when measurable, and app memory.
+The system SHALL provide a diagnostics screen for loading any embed URL with popup/ad blocking toggles, and an OK-key strategy. It SHALL display a HUD with player state, time to first frame, dropped/total frames when measurable, and app memory.
 
 #### Scenario: Measure a stream
 - **WHEN** the tester loads an embed URL in Embed Lab and playback starts
@@ -73,7 +73,7 @@ The Embed Lab session SHALL record pass/fail for: start ≤10 s, fullscreen, <1%
 
 #### Scenario: All checks pass
 - **WHEN** a configuration passes all six checks
-- **THEN** that load mode and input strategy are saved as the provider's playback defaults
+- **THEN** that input strategy is saved as the provider's playback defaults
 
 #### Scenario: Smoothness fails everywhere
 - **WHEN** no configuration passes the smoothness check

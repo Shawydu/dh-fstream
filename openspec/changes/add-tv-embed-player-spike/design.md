@@ -33,7 +33,7 @@ Compose for TV (`androidx.tv`) gives correct d-pad focus handling for free.
 
 ### D3. Normalized provider model
 - `ProviderAdapter`: `listCategories()`, `listEvents(filter)`, `listStreams(event)`.
-- `PlayableSource { kind: embed | hls | dash, url, headers?, loadMode? }`.
+- `PlayableSource { kind: embed | hls | dash, url, headers? }`.
 - The UI depends only on this model. Only `kind = embed` is implemented in the MVP.
 - Keyed providers later read their keys from `local.properties` → `BuildConfig` (personal sideload only). A proxy becomes required if the APK is ever distributed.
 
@@ -46,10 +46,9 @@ Configuration:
 - `shouldInterceptRequest` applies a small, configurable ad-host blocklist.
 - One WebView instance is reused across streams. On exit, load `about:blank` and pause/stop it, to keep memory bounded.
 
-### D5. Two load modes, selectable per provider
-- `top-level` (default): `loadUrl(embedUrl)`. The page's own fullscreen and player logic keep working.
-- `iframe-wrapper`: a local page loaded via `loadDataWithBaseURL` that holds `<iframe src=embedUrl allow="autoplay; fullscreen">`. This copies how the embed runs on a normal website, for providers that only render when framed.
-- The default mode is a field on the adapter / `PlayableSource`.
+### D5. Top-level load only
+- `loadUrl(embedUrl)`. The page's own fullscreen and player logic keep working.
+- An `iframe-wrapper` mode (local page holding `<iframe src=embedUrl>`) was tried and dropped: strmfree rejects framing by a foreign page and returns a JSON "violation" error instead of the player (see `feasibility.md`, check 1 and issue 4).
 
 ### D6. Remote input strategy, tried in order
 1. **OK → JS play:** call `evaluateJavascript` to play the first `<video>` it can reach. This only works if the video is in the top frame.
@@ -63,7 +62,7 @@ Auto-start: one center tap after page load + settle delay; OK remains manual fal
 
 ### D7. Embed Lab as the feasibility harness
 It's a debug screen inside the real app:
-- Inputs: a source picker (live event from the API, or a pasted URL), the load mode, popup/ad toggles, the user-agent toggle and the OK strategy.
+- Inputs: a source picker (live event from the API, or a pasted URL), popup/ad toggles, the user-agent toggle and the OK strategy.
 - HUD: player state, time to first frame, dropped/total frames (`getVideoPlaybackQuality()` when reachable), app memory (`Debug.getMemoryInfo`).
 
 Feasibility pass criteria:

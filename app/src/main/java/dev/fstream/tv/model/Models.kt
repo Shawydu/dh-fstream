@@ -6,14 +6,10 @@ import kotlinx.serialization.Serializable
 enum class SourceKind { EMBED, HLS, DASH }
 
 @Serializable
-enum class LoadMode { TOP_LEVEL, IFRAME_WRAPPER }
-
-@Serializable
 data class PlayableSource(
     val kind: SourceKind,
     val url: String,
     val headers: Map<String, String> = emptyMap(),
-    val loadMode: LoadMode? = null,
 )
 
 @Serializable

@@ -9,7 +9,7 @@ We want to watch streams from embed-style providers (starting with streamed.pk) 
 - New sideloaded Android TV app for Chromecast with Google TV (HD). It runs standalone, with no Cast sender/receiver.
 - Native browse flow (Compose for TV): Live / Sports → Events → Streams, fed by a provider adapter. streamed.pk is the first provider.
 - Full-screen WebView embed player for `embedUrl` sources, controllable with the TV remote (OK, Back), with popups and ad overlays suppressed.
-- "Embed Lab" debug screen: paste or pick an `embedUrl`, toggle the load mode, ad blocking and OK-key strategy, and read a playback HUD (time to first frame, dropped frames, memory). It produces the pass/fail feasibility verdict.
+- "Embed Lab" debug screen: paste or pick an `embedUrl`, toggle ad blocking and OK-key strategy, and read a playback HUD (time to first frame, dropped frames, memory). It produces the pass/fail feasibility verdict.
 - Provider abstraction that normalizes events and streams into a `PlayableSource` with `kind` (`embed` now; `hls`/`dash` reserved), so keyed providers can be added later without UI changes.
 
 Out of scope for this MVP: native HLS/DASH playback (Media3), a backend proxy, keyed providers, publishing to Play, Cast sender support, and extracting or rewriting media URLs from provider players.

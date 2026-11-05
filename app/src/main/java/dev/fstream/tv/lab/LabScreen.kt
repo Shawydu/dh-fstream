@@ -29,7 +29,6 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import dev.fstream.tv.AppContainer
-import dev.fstream.tv.model.LoadMode
 import dev.fstream.tv.model.PlayableSource
 import dev.fstream.tv.model.SourceKind
 import dev.fstream.tv.model.Stream
@@ -41,7 +40,6 @@ import kotlinx.coroutines.launch
 
 private const val DEFAULT_URL = "https://strmfree.st/embed/basketball/philadelphia-76ers-vs-detroit-pistons1080p"
 private const val ASSETS = "https://appassets.androidplatform.net/assets/testpages/"
-private val LOAD_MODES: List<LoadMode?> = listOf(null, LoadMode.TOP_LEVEL, LoadMode.IFRAME_WRAPPER)
 
 private fun prefs(c: Context) = c.getSharedPreferences("embed_lab", Context.MODE_PRIVATE)
 
@@ -52,7 +50,6 @@ fun LabScreen(container: AppContainer, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val p = remember { prefs(context) }
     var url by remember { mutableStateOf(p.getString("url", DEFAULT_URL) ?: DEFAULT_URL) }
-    var loadMode by remember { mutableStateOf(p.getString("loadMode", null)?.let { runCatching { LoadMode.valueOf(it) }.getOrNull() }) }
     var ok by remember { mutableStateOf(runCatching { OkStrategy.valueOf(p.getString("ok", "") ?: "") }.getOrDefault(OkStrategy.CENTER_TAP)) }
     var hud by remember { mutableStateOf(p.getBoolean("hud", true)) }
     var blocklist by remember { mutableStateOf(p.getBoolean("blocklist", true)) }
@@ -62,14 +59,14 @@ fun LabScreen(container: AppContainer, onBack: () -> Unit) {
 
     BackHandler(onBack = onBack)
 
-    fun save() = p.edit().putString("url", url).putString("loadMode", loadMode?.name)
+    fun save() = p.edit().putString("url", url)
         .putString("ok", ok.name).putBoolean("hud", hud).putBoolean("blocklist", blocklist).putBoolean("autoStart", autoStart).apply()
 
     fun play(u: String = url) {
         save()
         PlayerActivity.start(
             context, PlayableSource(SourceKind.EMBED, u), "Lab",
-            PlayerOptions(loadMode, ok, hud, blocklist, autoStart),
+            PlayerOptions(ok, hud, blocklist, autoStart),
         )
     }
 
@@ -87,9 +84,6 @@ fun LabScreen(container: AppContainer, onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth().background(Color(0xFF263040)).padding(12.dp),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { loadMode = LOAD_MODES[(LOAD_MODES.indexOf(loadMode) + 1) % LOAD_MODES.size]; save() }) {
-                Text("Load mode: ${loadMode ?: "default"}")
-            }
             Button(onClick = { ok = OkStrategy.entries[(ok.ordinal + 1) % OkStrategy.entries.size]; save() }) { Text("OK: $ok") }
             Button(onClick = { hud = !hud; save() }) { Text("HUD: ${if (hud) "on" else "off"}") }
             Button(onClick = { blocklist = !blocklist; save() }) { Text("Blocklist: ${if (blocklist) "on" else "off"}") }

@@ -2,7 +2,6 @@ package dev.fstream.tv.provider.strmfree
 
 import dev.fstream.tv.model.Category
 import dev.fstream.tv.model.Event
-import dev.fstream.tv.model.LoadMode
 import dev.fstream.tv.model.PlayableSource
 import dev.fstream.tv.model.SourceKind
 import dev.fstream.tv.model.SourceRef
@@ -99,7 +98,7 @@ class StrmFreeAdapter(
                     hd = q != "SD",
                     viewers = 0,
                     sourceLabel = q + if (s.live != true) " · not live yet" else "",
-                    playable = PlayableSource(SourceKind.EMBED, s.url!!, loadMode = DEFAULT_LOAD_MODE),
+                    playable = PlayableSource(SourceKind.EMBED, s.url!!),
                 )
             }
     }
@@ -150,9 +149,6 @@ class StrmFreeAdapter(
     }
 
     companion object {
-        /** IFRAME_WRAPPER is rejected by the provider (feasibility run). */
-        val DEFAULT_LOAD_MODE: LoadMode? = LoadMode.TOP_LEVEL
-
         private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
     }
 }

@@ -27,7 +27,7 @@ dev.fstream.tv
 ├── AppContainer.kt          manual DI: OkHttpClient, ProviderAdapter(s), PlayerConfig
 ├── MainActivity.kt          Compose host for browse screens + simple Route back stack
 ├── nav/Route.kt             sealed Route { Home; Streams(event); Lab }
-├── model/                   Category, Event, Stream, PlayableSource, SourceKind, LoadMode  (shared, frozen after wave 1)
+├── model/                   Category, Event, Stream, PlayableSource, SourceKind  (shared, frozen after wave 1)
 ├── provider/                ProviderAdapter interface + strmfree/ adapter
 ├── browse/                  Home + Streams Compose screens, ViewModels
 ├── player/                  PlayerActivity (View-based), WebViewHolder, clients, OK strategies, CursorOverlay, Hud
@@ -39,7 +39,7 @@ dev.fstream.tv
 - Player entry point (the only coupling between browse/lab and player):
   `PlayerActivity.start(context: Context, source: PlayableSource, title: String, options: PlayerOptions = PlayerOptions())`
   Extras are `Json.encodeToString` strings; `PlayableSource` and `PlayerOptions` are `@Serializable`.
-- `PlayerOptions(loadMode: LoadMode?, okStrategy: OkStrategy, showHud: Boolean, blocklistEnabled: Boolean)`; `null` loadMode = use `source.loadMode` ?: provider default.
+- `PlayerOptions(okStrategy: OkStrategy, showHud: Boolean, blocklistEnabled: Boolean, autoStart: Boolean)`. The embed is always loaded top-level (`loadUrl(embedUrl)`); there is no load-mode setting.
 - Player is a plain `Activity`/`ComponentActivity` with Views, not Compose: WebView, fullscreen custom view, cursor overlay and HUD are FrameLayout children. BACK handled in `dispatchKeyEvent`/OnBackPressedCallback: custom view → exit custom view; else load `about:blank`, pause, finish.
 - One WebView per process (D4): `WebViewHolder` creates it with `MutableContextWrapper(appContext)`, swaps base context to the activity on attach, and detaches + `about:blank` on exit. Never `destroy()` while the process lives.
 - `ProviderAdapter` is a suspend interface returning `Result`-free plain values and throwing `ProviderException` on failure; ViewModels map exceptions to UI error state with Retry.

@@ -116,3 +116,12 @@ Device results are INCOMPLETE: adb wireless debugging dropped mid-run (device no
 - Not verified: double-tap side effects, popups across 5 trials, Back + audio stop with auto-start, settle-delay tuning (still 1500 ms).
 
 Check 1 (start <= 10 s): NOT confirmed. Only one valid trial, at 12.7 s ttff / 19.9 s measured. Rerun needed.
+
+## Quality policy (2026-11-04)
+
+All qualities (SD, HD, FHD, ...) stay available, SD listed first by default; no SD-only restriction. Check 3 per quality: SD passes steady state (about 0.7% dropped); FHD (1080p60) drops about 10% on this device. Known caveat, not a blocker.
+
+### Auto-start rerun (adb restored, 2026-11-04)
+Four valid trials across 3 events, HD streams, no OK pressed, stream-OK to CDP `currentTime` advancing: 34.0 s (1080p), 23.2 s (1080p), 26.3 s (720p), 32.1 s (1080p); mean about 29 s. A fifth trial (2.3 s) is discarded: its frame counters showed over 48 s of prior playback, so the probe hit a stale video. Auto-start tap fired in every trial (no OK needed); the 1500 ms settle delay is not the bottleneck (embed page load and stream start dominate), so it stays at 1500 ms. Screenshots failed to save in this run, so popups, double-tap side effects and Back/audio-stop were not re-verified; the HUD in a1 showed popups 0 and no pause toggle.
+
+Check 1 (start <= 10 s): FAIL. Auto-start removes the need to press OK but start time is 23-34 s on this network/device.

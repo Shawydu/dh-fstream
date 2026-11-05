@@ -2,7 +2,6 @@ package dev.fstream.tv.provider.fake
 
 import dev.fstream.tv.model.Category
 import dev.fstream.tv.model.Event
-import dev.fstream.tv.model.LoadMode
 import dev.fstream.tv.model.PlayableSource
 import dev.fstream.tv.model.SourceKind
 import dev.fstream.tv.model.SourceRef
@@ -52,7 +51,7 @@ class FakeProviderAdapter(@Volatile var failing: Boolean = false) : ProviderAdap
             Stream(
                 id = "${event.id}-$n", number = n, language = "English", hd = n == 1, viewers = 100 * n,
                 sourceLabel = "alpha",
-                playable = PlayableSource(SourceKind.EMBED, "https://example.com/embed/${event.id}/$n", loadMode = LoadMode.TOP_LEVEL),
+                playable = PlayableSource(SourceKind.EMBED, "https://example.com/embed/${event.id}/$n"),
             )
         }
     }
