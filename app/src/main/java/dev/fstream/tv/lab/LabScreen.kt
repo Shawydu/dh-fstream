@@ -56,19 +56,20 @@ fun LabScreen(container: AppContainer, onBack: () -> Unit) {
     var ok by remember { mutableStateOf(runCatching { OkStrategy.valueOf(p.getString("ok", "") ?: "") }.getOrDefault(OkStrategy.CENTER_TAP)) }
     var hud by remember { mutableStateOf(p.getBoolean("hud", true)) }
     var blocklist by remember { mutableStateOf(p.getBoolean("blocklist", true)) }
+    var autoStart by remember { mutableStateOf(p.getBoolean("autoStart", true)) }
     var pickStatus by remember { mutableStateOf("") }
     val streams = remember { mutableStateListOf<Stream>() }
 
     BackHandler(onBack = onBack)
 
     fun save() = p.edit().putString("url", url).putString("loadMode", loadMode?.name)
-        .putString("ok", ok.name).putBoolean("hud", hud).putBoolean("blocklist", blocklist).apply()
+        .putString("ok", ok.name).putBoolean("hud", hud).putBoolean("blocklist", blocklist).putBoolean("autoStart", autoStart).apply()
 
     fun play(u: String = url) {
         save()
         PlayerActivity.start(
             context, PlayableSource(SourceKind.EMBED, u), "Lab",
-            PlayerOptions(loadMode, ok, hud, blocklist),
+            PlayerOptions(loadMode, ok, hud, blocklist, autoStart),
         )
     }
 
@@ -92,6 +93,7 @@ fun LabScreen(container: AppContainer, onBack: () -> Unit) {
             Button(onClick = { ok = OkStrategy.entries[(ok.ordinal + 1) % OkStrategy.entries.size]; save() }) { Text("OK: $ok") }
             Button(onClick = { hud = !hud; save() }) { Text("HUD: ${if (hud) "on" else "off"}") }
             Button(onClick = { blocklist = !blocklist; save() }) { Text("Blocklist: ${if (blocklist) "on" else "off"}") }
+            Button(onClick = { autoStart = !autoStart; save() }) { Text("Auto-start: ${if (autoStart) "on" else "off"}") }
         }
         Button(onClick = { play() }) { Text("Play") }
 

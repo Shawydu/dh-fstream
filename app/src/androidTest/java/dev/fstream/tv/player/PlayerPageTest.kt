@@ -18,7 +18,7 @@ class PlayerPageTest {
     private val ctx get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private fun launch(page: String, ok: OkStrategy = OkStrategy.JS_PLAY): ActivityScenario<PlayerActivity> {
-        val i = PlayerActivity.intent(ctx, PlayableSource(SourceKind.EMBED, base + page), "t", PlayerOptions(okStrategy = ok))
+        val i = PlayerActivity.intent(ctx, PlayableSource(SourceKind.EMBED, base + page), "t", PlayerOptions(okStrategy = ok, autoStart = false))
         return ActivityScenario.launch(i)
     }
 

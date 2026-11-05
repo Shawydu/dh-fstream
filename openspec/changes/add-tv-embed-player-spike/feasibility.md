@@ -105,3 +105,14 @@ Fixes applied: default OK strategy CENTER_TAP (also Lab default); StrmFree defau
 Task status: 1.2 pass, 5.2 pass, 5.4 pass, 6.1 pass (+1.9% at switch 5; plateau).
 
 Remaining: SD startup burst is still there (first 3 minutes 1.7 to 3.7% per interval), overall soak 1.18% is above the strict 1% but steady state is 0.72%. The cross-origin HUD fix is covered by a unit test only; in these runs the probe always reached the iframe video once it existed, so the "state unknown" text was not seen on screen.
+
+## Auto-start (2026-11-04)
+
+Implemented: `PlayerOptions.autoStart` (default true, Embed Lab toggle); after main-frame onPageFinished the player waits `AUTO_START_DELAY_MS = 1500` and does one CENTER_TAP, skipped if the HudProbe already sees a visible, playing video. Cancelled on Back, onStop and new load. OK stays manual.
+
+Device results are INCOMPLETE: adb wireless debugging dropped mid-run (device no longer listed, `adb mdns services` empty, TV pingable) so the 5-trial run was not finished.
+- Trial a1 (Longwood Lancers v Saint Joseph's Hawks, Stream 1 HD/FHD, no OK pressed): HUD showed "auto-start tap", state playing, CDP paused=false, currentTime advancing; stream OK to playing 19.9 s (includes about 1 s per CDP poll; HUD ttff 12.7 s from player launch). 1280x720, 11/550 dropped.
+- Trials b1, b2 (SD "not live yet" streams): no playing video within 45 s (b1); b2 inconclusive (adb lost). Earlier audio-based timing (t2, t3) was 6.3 s and 6.5 s but is not reliable (the HUD still showed the play overlay in t2).
+- Not verified: double-tap side effects, popups across 5 trials, Back + audio stop with auto-start, settle-delay tuning (still 1500 ms).
+
+Check 1 (start <= 10 s): NOT confirmed. Only one valid trial, at 12.7 s ttff / 19.9 s measured. Rerun needed.

@@ -59,6 +59,8 @@ Configuration:
 - BACK is always handled by the app (exit custom view, then exit the player) and is never passed to the page.
 - The strategy is selectable in Embed Lab, and the winner becomes the per-provider default.
 
+Auto-start: one center tap after page load + settle delay; OK remains manual fallback.
+
 ### D7. Embed Lab as the feasibility harness
 It's a debug screen inside the real app:
 - Inputs: a source picker (live event from the API, or a pasted URL), the load mode, popup/ad toggles, the user-agent toggle and the OK strategy.

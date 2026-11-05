@@ -21,7 +21,11 @@ The system SHALL open a selected `embed` source full screen and render the provi
 The system SHALL let the viewer start or resume playback from the remote when the embed does not autoplay, using the provider's configured input strategy.
 
 #### Scenario: Embed waiting for interaction
-- **WHEN** the embed shows a play overlay and the viewer presses OK
+- **WHEN** the embed shows a play overlay after the page has loaded
+- **THEN** the player taps the screen center once automatically and playback starts
+
+#### Scenario: Manual fallback
+- **WHEN** playback has not started and the viewer presses OK
 - **THEN** playback starts
 
 #### Scenario: Pointer fallback

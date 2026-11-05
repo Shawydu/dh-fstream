@@ -93,8 +93,8 @@ class PlayerActivity : ComponentActivity() {
         webView = wv
         wv.webViewClient = PlayerWebViewClient(
             policy, options.blocklistEnabled, assetLoader, stats,
-            onStarted = { runOnUiThread { pageFinished = false; errorText = null } },
-            onFinished = { runOnUiThread { pageFinished = true } },
+            onStarted = { runOnUiThread { handler.removeCallbacks(autoStart); pageFinished = false; errorText = null } },
+            onFinished = { runOnUiThread { pageFinished = true; scheduleAutoStart() } },
             onError = { e -> runOnUiThread { errorText = e } },
         )
         wv.webChromeClient = object : WebChromeClient() {
@@ -133,6 +133,22 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
+    // Once-per-load center tap so the viewer doesn't have to press OK; skipped if the probe already sees playing video.
+    private val autoStart = Runnable {
+        webView?.evaluateJavascript(ProbeResult.JS) { r ->
+            val p = ProbeResult.parse(r)
+            if (p != null && p.videoVisible && !p.paused) return@evaluateJavascript
+            okStrategies.tapCenter()
+            lastStatus = "auto-start tap"
+        }
+    }
+
+    private fun scheduleAutoStart() {
+        if (!options.autoStart) return
+        handler.removeCallbacks(autoStart)
+        handler.postDelayed(autoStart, AUTO_START_DELAY_MS)
+    }
+
     private fun exitCustomView() {
         val v = customView ?: return
         customContainer.removeView(v)
@@ -144,6 +160,7 @@ class PlayerActivity : ComponentActivity() {
     }
 
     private fun handleBack() {
+        handler.removeCallbacks(autoStart)
         if (customView != null) {
             exitCustomView()
         } else {
@@ -172,6 +189,7 @@ class PlayerActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        handler.removeCallbacks(autoStart)
         webView?.onPause()
         super.onStop()
     }
@@ -229,6 +247,7 @@ class PlayerActivity : ComponentActivity() {
     }
 
     companion object {
+        const val AUTO_START_DELAY_MS = 1500L
         const val EXTRA_SOURCE = "source"
         const val EXTRA_TITLE = "title"
         const val EXTRA_OPTIONS = "options"
