@@ -91,3 +91,17 @@ Feasible with caveats. Winning config: TOP_LEVEL load mode + CENTER_TAP (CURSOR 
 7. HUD ttff is measured from player launch, so it includes the time until the user presses OK (11 to 49 s in the runs); dropped/total works because the HUD probe does reach the iframe video once playing.
 
 Screenshots and scripts: /private/tmp/claude-501/-Users-shawn-du-dev-dh-fstream/2227f0c4-f100-42d9-9914-358d4327b66a/scratchpad/feas/
+
+## Re-run after fixes (2026-11-04)
+
+Fixes applied: default OK strategy CENTER_TAP (also Lab default); StrmFree default load mode TOP_LEVEL; stream order live first, then SD, HD, FHD, 4K; HUD shows "page loaded (video cross-origin, state unknown)" and ttff "n/a" unless the probed video is visible (found and not cross-origin-with-currentTime 0). Same method as above (CDP, read-only). Screenshots in scratchpad/feas2/.
+
+1. End-to-end via d-pad (task 5.4): PASS. Home (Live) -> Chicago Bulls v New York Knicks -> Streams shows "Stream 1 SD, Stream 2 HD/FHD" (SD first; for events where SD is not live yet, live FHD is first by design) -> OK -> player, OK pressed at 8 s (page ready) -> video playing at 10.6 s from the stream OK (CDP: paused=false, t advancing); HUD ttff 9.6 s, state "playing", dropped/total 0/5 at first sight.
+2. Back navigation (task 5.2): PASS. Player Back -> Streams (focus on Stream 1); Back -> Home with focus on the previously selected event (Bulls v Knicks), list scrolled to keep it visible (back_streams.png, back_home.png).
+3. Memory over 10 switches (task 6.1), SD streams (Bulls / Hornets / Bucks rotation), CENTER_TAP, 20 s playing each, TOTAL PSS KB: 198310, 198049, 187289, 204804, 202160, 206406, 204270, 206516, 204642, 203094. Switch 5 vs 1 = +1.9% (spec: within +/-10%, PASS). Switch 10 vs 1 = +2.4%. Plateaus around 203-206 MB from switch 4. Same pid (11430) throughout, no crash; every switch had a probed moving video (HUD at switch 10: 12/592 dropped, ttff 9.8 s). After the final Back no AudioPlaybackConfiguration for the app's uid in `dumpsys audio`. 
+4. 10-minute SD soak (Bucks v Celtics, SD, CENTER_TAP): 11 samples, paused=false and currentTime advancing at every sample (50 s to 658 s). dropped/total: 6/64, 21/1874, 36/3683, 104/5500, 136/7309, 149/9105, 161/10919, 177/12708, 188/14533, 197/16320, 214/18143. Overall 1.18%; after minute 5: 78/10834 = 0.72%. Logcat (events+main filtered for am_proc_died, Force removing, FATAL, dev.fstream) captured to scratchpad/feas2/soak_logcat.txt: no process death, FATAL or finish during the soak window. The player did not die on its own (issue 5 from the first run not reproduced, 2 of 2 clean runs now).
+5. Home tile (task 1.2): PASS. Google TV Apps tab -> "Your apps" row shows the "fstream" banner (apps2.png); OK launches MainActivity (launched.png).
+
+Task status: 1.2 pass, 5.2 pass, 5.4 pass, 6.1 pass (+1.9% at switch 5; plateau).
+
+Remaining: SD startup burst is still there (first 3 minutes 1.7 to 3.7% per interval), overall soak 1.18% is above the strict 1% but steady state is 0.72%. The cross-origin HUD fix is covered by a unit test only; in these runs the probe always reached the iframe video once it existed, so the "state unknown" text was not seen on screen.

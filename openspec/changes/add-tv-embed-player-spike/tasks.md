@@ -3,7 +3,7 @@
 ## 1. Project setup and device loop
 
 - [x] 1.1 Create the Android TV project (Kotlin, Compose for TV, minSdk matching the HD's OS) with a `LEANBACK_LAUNCHER` activity, 320×180 banner, and `touchscreen required=false`; verify `./gradlew assembleDebug` succeeds
-- [ ] 1.2 Enable developer mode and network debugging on the HD, `adb connect <tv-ip>:5555`, and install; verify the app tile appears on the Google TV home screen and opens a placeholder screen
+- [x] 1.2 Enable developer mode and network debugging on the HD, `adb connect <tv-ip>:5555`, and install; verify the app tile appears on the Google TV home screen and opens a placeholder screen
 - [ ] 1.3 Document the device setup and install loop in `README.md`; verify a fresh install follows it exactly
 
 ## 2. Embed player core (spike first)
@@ -30,10 +30,10 @@
 ## 5. Browse UI
 
 - [x] 5.1 Build the Home screen with Live / Today / sport filters and the event list (title, time, teams); verify on the TV emulator that d-pad focus is always visible
-- [ ] 5.2 Build the Streams screen merging all sources (language, HD, viewers, source label) with a "no streams" state; verify Back returns focus to the selected event
+- [x] 5.2 Build the Streams screen merging all sources (language, HD, viewers, source label) with a "no streams" state; verify Back returns focus to the selected event
 - [x] 5.3 Add error + Retry states for failed or timed-out provider calls; verify with an adapter fake that fails, then succeeds
-- [ ] 5.4 Wire Streams → Player so selecting an embed stream opens the player; verify end to end on the HD: launch → live event → stream → playback → Back
+- [x] 5.4 Wire Streams → Player so selecting an embed stream opens the player; verify end to end on the HD: launch → live event → stream → playback → Back
 
 ## 6. Integration check
 
-- [ ] 6.1 On the HD, run 5 consecutive stream switches through the browse UI; verify no crash, no lingering audio, and memory within 10% (check 5 via the real flow)
+- [x] 6.1 On the HD, run 5 consecutive stream switches through the browse UI; verify no crash, no lingering audio, and memory within 10% (check 5 via the real flow)
