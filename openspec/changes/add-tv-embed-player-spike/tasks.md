@@ -17,7 +17,7 @@
 ## 3. Embed Lab and feasibility run
 
 - [x] 3.1 Build the Embed Lab screen (URL input or live-event picker, toggles, OK strategy); verify it loads the sample embed top-level
-- [ ] 3.2 Add the HUD (state, time to first frame, dropped/total frames or "n/a", app memory, 1 Hz refresh); verify values update against a local `<video>` test page
+- [x] 3.2 Add the HUD (state, time to first frame, dropped/total frames or "n/a", app memory, 1 Hz refresh); verify values update against a local `<video>` test page
 - [x] 3.3 Run checks 1–6 from design D7 on the HD against at least 3 live streams from different sources; record results in `openspec/changes/add-tv-embed-player-spike/feasibility.md`
 - [x] 3.4 Record the verdict and the winning OK strategy in `feasibility.md`; if smoothness fails on every config, stop here and report "not feasible"
 
