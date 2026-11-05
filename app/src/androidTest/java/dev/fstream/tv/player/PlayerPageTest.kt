@@ -17,8 +17,8 @@ class PlayerPageTest {
     private val base = "https://appassets.androidplatform.net/assets/testpages/"
     private val ctx get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun launch(page: String, ok: OkStrategy = OkStrategy.JS_PLAY): ActivityScenario<PlayerActivity> {
-        val i = PlayerActivity.intent(ctx, PlayableSource(SourceKind.EMBED, base + page), "t", PlayerOptions(okStrategy = ok, autoStart = false))
+    private fun launch(page: String, ok: OkStrategy = OkStrategy.JS_PLAY, alwaysHud: Boolean = false): ActivityScenario<PlayerActivity> {
+        val i = PlayerActivity.intent(ctx, PlayableSource(SourceKind.EMBED, base + page), "t", PlayerOptions(okStrategy = ok, alwaysShowHud = alwaysHud, autoStart = false))
         return ActivityScenario.launch(i)
     }
 
@@ -91,6 +91,36 @@ class PlayerPageTest {
     @Test fun hudPageAutoplays() {
         launch("hud.html").use {
             assertTrue(waitFor { js("document.getElementById('v').currentTime>0") == "true" })
+        }
+    }
+
+    private fun hudText(s: ActivityScenario<PlayerActivity>): String {
+        var t = ""
+        s.onActivity { t = it.findViewById<android.view.View>(android.R.id.content).let { c -> findHud(c)?.text?.toString() ?: "" } }
+        return t
+    }
+
+    private fun findHud(v: android.view.View): android.widget.TextView? {
+        if (v is android.widget.TextView) return v
+        if (v is android.view.ViewGroup) for (i in 0 until v.childCount) findHud(v.getChildAt(i))?.let { return it }
+        return null
+    }
+
+    @Test fun hudShowsLiveValuesWhenAlwaysOn() {
+        launch("hud.html", alwaysHud = true).use { s ->
+            val ok = Regex("state: playing\\nttff: \\d+ms  dropped/total: \\d+/\\d+\\nmem: \\d+MB")
+            assertTrue(waitFor(15000) { ok.containsMatchIn(hudText(s)) })
+            val first = hudText(s)
+            Thread.sleep(1500)
+            assertTrue(hudText(s) != first)
+        }
+    }
+
+    @Test fun hudHiddenWhilePlayingWhenAlwaysOff() {
+        launch("hud.html").use { s ->
+            assertTrue(waitFor { js("document.getElementById('v').currentTime>0") == "true" })
+            var vis = -1
+            assertTrue(waitFor(8000) { s.onActivity { vis = findHud(it.findViewById(android.R.id.content))!!.visibility }; vis == android.view.View.GONE })
         }
     }
 

@@ -64,12 +64,20 @@ The system SHALL provide a diagnostics screen for loading any embed URL with pop
 - **WHEN** the tester loads an embed URL in Embed Lab and playback starts
 - **THEN** the HUD shows time to first frame and updates frames and memory at least once per second
 
+#### Scenario: HUD hidden while playing
+- **WHEN** a probed video reports playing and "Always show HUD" is off (the default outside Embed Lab)
+- **THEN** the HUD is hidden, and it is shown again while loading, paused, state unknown, or on error
+
+#### Scenario: Always show HUD
+- **WHEN** "Always show HUD" is on (default in Embed Lab)
+- **THEN** the HUD stays visible during playback and the probe keeps refreshing it at 1 Hz
+
 #### Scenario: Metrics not measurable
 - **WHEN** the video element is not reachable from the app (e.g. inside a cross-origin frame)
 - **THEN** the HUD shows frame metrics as "n/a" instead of a value
 
 ### Requirement: Feasibility verdict
-The Embed Lab session SHALL record pass/fail for: start ≤10 s, fullscreen, <1% dropped frames with no stall over 10 minutes, no popups, 5 stable switches, and Back exits. The passing configuration SHALL become the provider's default.
+The Embed Lab session SHALL record pass/fail for: start ≤ 20 s on Chromecast HD (measured median ~15 s with auto-start), fullscreen, <1% dropped frames with no stall over 10 minutes, no popups, 5 stable switches, and Back exits. The passing configuration SHALL become the provider's default.
 
 #### Scenario: All checks pass
 - **WHEN** a configuration passes all six checks

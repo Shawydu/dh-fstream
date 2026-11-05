@@ -15,6 +15,10 @@ data class ProbeResult(
     val videoVisible get() = found && !(crossOrigin && currentTime <= 0)
 
     companion object {
+        /** HUD is shown unless a probed video is playing (loading, paused, unknown and error all show it). */
+        fun hudVisible(p: ProbeResult?, error: Boolean, always: Boolean): Boolean =
+            always || error || p == null || !p.videoVisible || p.paused
+
         /**
          * Walks top frame and same-origin iframes for the first <video>. Cross-origin iframes
          * (contentDocument inaccessible) set xo=true. evaluateJavascript returns the object as JSON.

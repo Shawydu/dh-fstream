@@ -70,7 +70,7 @@ class PlayerActivity : ComponentActivity() {
             textSize = 14f
             typeface = android.graphics.Typeface.MONOSPACE
             setPadding(16, 8, 16, 8)
-            visibility = if (options.showHud) View.VISIBLE else View.GONE
+            visibility = if (options.alwaysShowHud) View.VISIBLE else View.GONE
         }
         val match = FrameLayout.LayoutParams.MATCH_PARENT
         root.addView(webContainer, FrameLayout.LayoutParams(match, match))
@@ -207,7 +207,10 @@ class PlayerActivity : ComponentActivity() {
                     }
                 }
             }
-            if (tick % 4 == 0 && options.showHud) hud.text = hudText()
+            if (tick % 4 == 0) {
+                hud.text = hudText()
+                hud.visibility = if (ProbeResult.hudVisible(lastProbe, errorText != null, options.alwaysShowHud)) View.VISIBLE else View.GONE
+            }
             handler.postDelayed(this, 250)
         }
     }

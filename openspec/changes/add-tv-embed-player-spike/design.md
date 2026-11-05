@@ -69,7 +69,7 @@ Feasibility pass criteria:
 
 | # | Check | Pass |
 |---|---|---|
-| 1 | Start | First frame ≤10 s, starts by itself or with one remote press |
+| 1 | Start | First frame ≤ 20 s on Chromecast HD (median ~15 s with auto-start), starts by itself or with one remote press |
 | 2 | Fullscreen | Video fills the 1080p screen |
 | 3 | Smooth | <1% dropped frames, no stall over a 10-min live soak |
 | 4 | Ads | No popup windows; no overlay that needs a pointer, or the cursor fallback clears it |

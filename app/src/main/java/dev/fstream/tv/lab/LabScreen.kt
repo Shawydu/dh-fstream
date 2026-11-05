@@ -85,7 +85,7 @@ fun LabScreen(container: AppContainer, onBack: () -> Unit) {
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = { ok = OkStrategy.entries[(ok.ordinal + 1) % OkStrategy.entries.size]; save() }) { Text("OK: $ok") }
-            Button(onClick = { hud = !hud; save() }) { Text("HUD: ${if (hud) "on" else "off"}") }
+            Button(onClick = { hud = !hud; save() }) { Text("Always show HUD: ${if (hud) "on" else "off"}") }
             Button(onClick = { blocklist = !blocklist; save() }) { Text("Blocklist: ${if (blocklist) "on" else "off"}") }
             Button(onClick = { autoStart = !autoStart; save() }) { Text("Auto-start: ${if (autoStart) "on" else "off"}") }
         }
