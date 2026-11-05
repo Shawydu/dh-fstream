@@ -4,7 +4,7 @@
 
 - [x] 1.1 Create the Android TV project (Kotlin, Compose for TV, minSdk matching the HD's OS) with a `LEANBACK_LAUNCHER` activity, 320×180 banner, and `touchscreen required=false`; verify `./gradlew assembleDebug` succeeds
 - [x] 1.2 Enable developer mode and network debugging on the HD, `adb connect <tv-ip>:5555`, and install; verify the app tile appears on the Google TV home screen and opens a placeholder screen
-- [ ] 1.3 Document the device setup and install loop in `README.md`; verify a fresh install follows it exactly
+- [x] 1.3 Document the device setup and install loop in `README.md`; verify a fresh install follows it exactly
 
 ## 2. Embed player core (spike first)
 
@@ -16,7 +16,7 @@
 
 ## 3. Embed Lab and feasibility run
 
-- [ ] 3.1 Build the Embed Lab screen (URL input or live-event picker, toggles, OK strategy); verify it loads the sample embed top-level
+- [x] 3.1 Build the Embed Lab screen (URL input or live-event picker, toggles, OK strategy); verify it loads the sample embed top-level
 - [ ] 3.2 Add the HUD (state, time to first frame, dropped/total frames or "n/a", app memory, 1 Hz refresh); verify values update against a local `<video>` test page
 - [x] 3.3 Run checks 1–6 from design D7 on the HD against at least 3 live streams from different sources; record results in `openspec/changes/add-tv-embed-player-spike/feasibility.md`
 - [x] 3.4 Record the verdict and the winning OK strategy in `feasibility.md`; if smoothness fails on every config, stop here and report "not feasible"
