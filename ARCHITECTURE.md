@@ -41,7 +41,7 @@ dev.fstream.tv
   Extras are `Json.encodeToString` strings; `PlayableSource` and `PlayerOptions` are `@Serializable`.
 - `PlayerOptions(okStrategy: OkStrategy, showHud: Boolean, blocklistEnabled: Boolean, autoStart: Boolean)`. The embed is always loaded top-level (`loadUrl(embedUrl)`); there is no load-mode setting.
 - Player is a plain `Activity`/`ComponentActivity` with Views, not Compose: WebView, fullscreen custom view, cursor overlay and HUD are FrameLayout children. BACK handled in `dispatchKeyEvent`/OnBackPressedCallback: custom view → exit custom view; else load `about:blank`, pause, finish.
-- One WebView per process (D4): `WebViewHolder` creates it with `MutableContextWrapper(appContext)`, swaps base context to the activity on attach, and detaches + `about:blank` on exit. Never `destroy()` while the process lives.
+- One WebView per process (D4): `WebViewHolder` creates it with `MutableContextWrapper(appContext)`, swaps base context to the activity on attach, and detaches + `about:blank` on exit. `destroy()` + recreate only on stall recovery (a long-lived WebView can go blank on the HD; see feasibility.md 2026-11-12).
 - `ProviderAdapter` is a suspend interface returning `Result`-free plain values and throwing `ProviderException` on failure; ViewModels map exceptions to UI error state with Retry.
 - Unsupported `SourceKind` (`HLS`, `DASH`) is shown as "unavailable" and never launches the player.
 
