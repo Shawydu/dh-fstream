@@ -40,8 +40,8 @@ class HomeViewModel(private val provider: ProviderAdapter, private val scope: Co
 
     fun load() {
         job?.cancel()
+        if (_state.value.events is Load.Error) _state.update { it.copy(events = Load.Loading) }
         job = scope.launch {
-            _state.update { it.copy(events = Load.Loading) }
             if (_state.value.categories.isEmpty()) {
                 // Category failure is non-fatal; Live/Today remain usable.
                 runCatching { provider.categories() }.onSuccess { c -> _state.update { it.copy(categories = c) } }
@@ -64,7 +64,8 @@ class HomeViewModel(private val provider: ProviderAdapter, private val scope: Co
     }
 
     fun selectFilter(filter: HomeFilter) {
-        _state.update { it.copy(filter = filter, selectedEventId = null) }
+        // Different list: blank it; same-list refreshes (load()) keep the current content visible.
+        _state.update { it.copy(filter = filter, selectedEventId = null, events = Load.Loading) }
         load()
     }
 

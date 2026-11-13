@@ -23,7 +23,7 @@ class StreamsViewModel(
     fun load() {
         job?.cancel()
         job = scope.launch {
-            _state.value = Load.Loading
+            if (_state.value is Load.Error) _state.value = Load.Loading
             _state.value = try {
                 Load.Content(provider.streams(event))
             } catch (e: CancellationException) {

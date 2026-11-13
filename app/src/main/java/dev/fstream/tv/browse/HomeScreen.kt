@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -46,10 +48,8 @@ fun teamsLine(e: Event): String? {
 @Composable
 fun HomeScreen(vm: HomeViewModel, onOpenEvent: (Event) -> Unit, onOpenLab: () -> Unit) {
     val state by vm.state.collectAsState()
-    LaunchedEffect(Unit) {
-        // Don't reload when returning from Streams with content already present.
-        if (vm.state.value.events !is Load.Content) vm.load()
-    }
+    // Fires on entering Home (initial, back from Streams) and on app resume; the list stays visible while refetching.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { vm.load() }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

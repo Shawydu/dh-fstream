@@ -41,8 +41,10 @@ class FakeProviderAdapter(@Volatile var failing: Boolean = false) : ProviderAdap
         check(); return cats
     }
 
+    @Volatile var eventCalls = 0
+
     override suspend fun events(filter: EventFilter, category: String?): List<Event> {
-        check(); return all.filter { category == null || it.category == category }
+        eventCalls++; check(); return all.filter { category == null || it.category == category }
     }
 
     override suspend fun streams(event: Event): List<Stream> {

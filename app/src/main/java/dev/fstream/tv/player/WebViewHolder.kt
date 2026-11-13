@@ -39,6 +39,7 @@ object WebViewHolder {
             useWideViewPort = true
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         }
+        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(w, true) // embed player lives in third-party iframes
         w.setBackgroundColor(0xFF000000.toInt())
         wv = w
         return w

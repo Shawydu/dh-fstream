@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
+import android.util.Log
 import android.os.Debug
 import android.os.Handler
 import android.os.Looper
@@ -51,10 +52,13 @@ class PlayerActivity : ComponentActivity() {
     private var lastProbe: ProbeResult? = null
     private var lastStatus = ""
     private var tick = 0
+    private val stall = StallDetector()
+    private var reconnecting = false
+    private lateinit var source: PlayableSource
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val source = Json.decodeFromString<PlayableSource>(intent.getStringExtra(EXTRA_SOURCE)!!)
+        source = Json.decodeFromString<PlayableSource>(intent.getStringExtra(EXTRA_SOURCE)!!)
         options = intent.getStringExtra(EXTRA_OPTIONS)?.let { Json.decodeFromString<PlayerOptions>(it) } ?: PlayerOptions()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -94,6 +98,11 @@ class PlayerActivity : ComponentActivity() {
             onError = { e -> runOnUiThread { errorText = e } },
         )
         wv.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(m: android.webkit.ConsoleMessage): Boolean {
+                Log.i("fstream-console", "${m.messageLevel()} ${m.message()} (${m.sourceId()}:${m.lineNumber()})")
+                return true
+            }
+
             override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: android.os.Message?): Boolean {
                 stats.blockedPopups.incrementAndGet()
                 return false
@@ -202,6 +211,8 @@ class PlayerActivity : ComponentActivity() {
                 wv.evaluateJavascript(ProbeResult.JS) { r ->
                     val p = ProbeResult.parse(r)
                     lastProbe = p
+                    if (p != null && p.found && !p.paused && p.currentTime > 0) reconnecting = false
+                    if (stall.onProbe(p, SystemClock.elapsedRealtime())) reconnect()
                     if (p != null && p.found && p.currentTime > 0 && ttffMs == null) {
                         ttffMs = SystemClock.elapsedRealtime() - loadStartMs
                     }
@@ -209,15 +220,22 @@ class PlayerActivity : ComponentActivity() {
             }
             if (tick % 4 == 0) {
                 hud.text = hudText()
-                hud.visibility = if (ProbeResult.hudVisible(lastProbe, errorText != null, options.alwaysShowHud)) View.VISIBLE else View.GONE
+                hud.visibility = if (ProbeResult.hudVisible(lastProbe, errorText != null || reconnecting, options.alwaysShowHud)) View.VISIBLE else View.GONE
             }
             handler.postDelayed(this, 250)
         }
     }
 
+    private fun reconnect() {
+        Log.w("fstream-player", "stall detected, reload ${stall.reloads}/$MAX_RELOADS")
+        reconnecting = true; lastProbe = null; errorText = null; pageFinished = false
+        webView?.loadUrl(source.url, source.headers)
+    }
+
     private fun hudText(): String {
         val p = lastProbe
         val state = when {
+            reconnecting -> "reconnecting… (${stall.reloads}/$MAX_RELOADS)"
             errorText != null -> "error"
             !pageFinished -> "loading"
             p != null && p.videoVisible -> if (p.paused) "paused" else "playing"
@@ -237,6 +255,7 @@ class PlayerActivity : ComponentActivity() {
     }
 
     companion object {
+        const val MAX_RELOADS = 3
         const val AUTO_START_DELAY_MS = 800L
         const val EXTRA_SOURCE = "source"
         const val EXTRA_TITLE = "title"

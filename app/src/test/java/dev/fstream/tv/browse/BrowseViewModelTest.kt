@@ -5,6 +5,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -47,5 +48,32 @@ class BrowseViewModelTest {
         fake.failing = false
         vm.retry(); advanceUntilIdle()
         assertEquals(2, (vm.state.value as Load.Content).data.size)
+    }
+
+    @Test
+    fun homeReloadKeepsContentVisibleAndRefetches() = runTest {
+        val fake = FakeProviderAdapter()
+        val vm = HomeViewModel(fake, TestScope(StandardTestDispatcher(testScheduler)))
+        vm.load(); advanceUntilIdle()
+        val calls = fake.eventCalls
+        vm.load()
+        runCurrent()
+        assertTrue(vm.state.value.events is Load.Content) // no flicker to Loading
+        advanceUntilIdle()
+        assertEquals(calls + 1, fake.eventCalls)
+        vm.selectFilter(HomeFilter.Today)
+        assertTrue(vm.state.value.events is Load.Loading) // different tab blanks the old list
+        advanceUntilIdle()
+        assertEquals(calls + 2, fake.eventCalls)
+    }
+
+    @Test
+    fun streamsReloadKeepsContent() = runTest {
+        val fake = FakeProviderAdapter()
+        val event = fake.events(dev.fstream.tv.provider.EventFilter.ALL).first()
+        val vm = StreamsViewModel(fake, event, TestScope(StandardTestDispatcher(testScheduler)))
+        vm.load(); advanceUntilIdle()
+        vm.load(); runCurrent()
+        assertTrue(vm.state.value is Load.Content)
     }
 }

@@ -51,6 +51,12 @@ class PlayerWebViewClient(
         if (url != "about:blank") onFinished()
     }
 
+    override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+        Log.e(TAG, "renderer gone crashed=${detail.didCrash()}")
+        onError("renderer gone")
+        return true
+    }
+
     override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
         if (request.isForMainFrame) onError("${error.errorCode} ${error.description}")
     }
