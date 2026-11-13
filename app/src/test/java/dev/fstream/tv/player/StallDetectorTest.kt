@@ -26,10 +26,31 @@ class StallDetectorTest {
         d.onProbe(p(5.0), now); assertFalse(d.onProbe(p(5.0), now + 20_000))
     }
 
-    @Test fun pausedOrNeverPlayedOrNoVideoBeforePlayDoesNotReload() {
+    @Test fun neverPlayedOrNoVideoBeforePlayDoesNotReload() {
         val d = StallDetector()
         assertFalse(d.onProbe(null, 0)); assertFalse(d.onProbe(p(0.0), 60_000))
-        assertFalse(d.onProbe(p(5.0, paused = true), 100_000)); assertFalse(d.onProbe(p(5.0, paused = true), 200_000))
+        assertFalse(d.onProbe(p(0.0, paused = true), 100_000)); assertFalse(d.onProbe(p(0.0, paused = true), 200_000))
+    }
+
+    @Test fun pausedWithoutUserActionReloadsAfter15sButKeyPressResets() {
+        val d = StallDetector()
+        d.onProbe(p(5.0), 0)
+        assertFalse(d.onProbe(p(5.0, paused = true), 10_000))
+        d.onUserAction(12_000)
+        assertFalse(d.onProbe(p(5.0, paused = true), 26_000))
+        assertTrue(d.onProbe(p(5.0, paused = true), 27_000))
+    }
+
+    @Test fun endedErroredOrNoSourceCountsAsStallEvenIfTimeChanges() {
+        for (q in listOf(
+            ProbeResult(true, false, 6.0, null, null, false, ended = true),
+            ProbeResult(true, false, 6.0, null, null, false, mediaError = true),
+            ProbeResult(true, false, 6.0, null, null, false, noSource = true),
+        )) {
+            val d = StallDetector()
+            d.onProbe(p(5.0), 0)
+            assertFalse(d.onProbe(q, 10_000)); assertTrue(d.onProbe(q, 15_000))
+        }
     }
 
     @Test fun videoVanishingAfterPlayCountsAsStall() {

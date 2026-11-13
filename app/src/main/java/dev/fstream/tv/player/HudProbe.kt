@@ -10,6 +10,9 @@ data class ProbeResult(
     val dropped: Long?,
     val total: Long?,
     val crossOrigin: Boolean,
+    val ended: Boolean = false,
+    val mediaError: Boolean = false,
+    val noSource: Boolean = false, // networkState == NETWORK_NO_SOURCE (3)
 ) {
     /** Cross-origin frames hide the real video; only trust a probed video that is actually advancing. */
     val videoVisible get() = found && !(crossOrigin && currentTime <= 0)
@@ -24,13 +27,13 @@ data class ProbeResult(
          * (contentDocument inaccessible) set xo=true. evaluateJavascript returns the object as JSON.
          */
         const val JS = """(function(){
-  var r={found:false,paused:true,t:0,dropped:-1,total:-1,xo:false};
+  var r={found:false,paused:true,t:0,dropped:-1,total:-1,xo:false,ended:false,err:false,ns:false};
   function f(d){
     var vs=d.querySelectorAll('video');
     for(var j=0;j<vs.length;j++){
       var v=vs[j];
       if(!r.found || (r.t<=0 && v.currentTime>0)){
-        r.found=true; r.paused=v.paused; r.t=v.currentTime;
+        r.found=true; r.paused=v.paused; r.t=v.currentTime; r.ended=v.ended; r.err=!!v.error; r.ns=(v.networkState===3);
         try{var q=v.getVideoPlaybackQuality(); r.dropped=q.droppedVideoFrames; r.total=q.totalVideoFrames;}catch(e){}
       }
     }
@@ -54,6 +57,9 @@ data class ProbeResult(
                     dropped = o.optLong("dropped", -1).takeIf { it >= 0 },
                     total = o.optLong("total", -1).takeIf { it >= 0 },
                     crossOrigin = o.optBoolean("xo"),
+                    ended = o.optBoolean("ended"),
+                    mediaError = o.optBoolean("err"),
+                    noSource = o.optBoolean("ns"),
                 )
             } catch (e: Exception) {
                 null

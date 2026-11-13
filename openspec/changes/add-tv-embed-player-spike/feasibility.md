@@ -161,3 +161,25 @@ No reproduction was possible without the device, so there is no log evidence. Co
 
 ### To verify on device
 15-minute playback (SD and HD): capture `adb logcat -s fstream-console fstream-player chromium`, check for 230001 and whether the reload resumed playback; tab switch / Back / app re-enter should show fresh requests. If 230001 persists after the cookie fix, retest with blocklist off.
+
+### Device verification 2026-11-12
+Device: TV at 192.168.18.7, debug build. Everything below was observed via logcat (`fstream-console`, `fstream-player`, `chromium`) and screenshots; no provider scripts or media URLs were inspected.
+
+**Bug 2 (stale data): PASS.** Temporary `fstream-browse` log (removed afterwards: `android.util.Log` throws in JVM unit tests) showed a fetch on every trigger: Live -> Hockey tab (fetch, list changed), Hockey -> Today -> Live (fetch, list changed), open event then Back/Back to Home (fetch at 21:51:52, 21:54:12, 21:55:03; focus returned to the opened event), HOME then relaunch from Your apps (fetch at 21:55:13). Screenshots in the session scratchpad.
+
+**Bug 1 (230001): not reproduced; a different failure was.**
+| # | Stream | Start | Minutes in | Event | Console just before | Recovery |
+|---|--------|-------|-----------|-------|---------------------|----------|
+| 1 | Pistons stream 1 (HD) | 22:02 | 0-19 | played, no stall, no 230001 | only ad CORS/CSP noise (id5-sync.com, 3lift.com, veltrix42.cyou, faphouse.com) | n/a |
+| 2 | Pistons stream 2 (HD) | 22:21 | 4.2 | video froze at t=228 s while `paused=false`; StallDetector fired after 15 s (22:25:25) | no console output at all in the last 60 s; no HTTP errors | plain reload 1/3: page loaded blank (no console, no video) for 5+ min; never resumed |
+| 3 | fresh Back + re-open (same and other stream) | 22:27-22:29 | - | also blank, state "loaded", 0 console lines | - | unrecoverable until process restart |
+| 4 | force-stop + relaunch | 22:30 | - | played immediately (ttff ~15 s), probe advancing | - | ok |
+Playback total on the first process: ~23 min across 2 streams (both listed HD; no SD source found for these events).
+
+Evidence: the network was fine (ping 8.8.8.8 and the provider host ok), the process had been alive ~38 min, the TV has 1.4 GB RAM with ~530 MB of swap in use and ~180 MB free, and chromium logged `image_reader_gl_owner.cc:299 number of concurrently acquired images has reached the limit` 694 times over the session (starting during normal playback, so it is not the trigger by itself, but it shows the decoder surface pool is saturated). After the video froze, the singleton WebView stopped rendering any page (blank, silent console) until the process was restarted. Cookies, Referer/UA, and the provider's token expiry do not fit: a fresh page load in the same process was blank, while a fresh process loaded and played at once with the same cookies and headers. No `onRenderProcessGone`, no `am_proc_died`.
+
+**Root cause verdict: ours (probable).** The process-wide WebView degrades on this low-memory TV after a long session and a plain `loadUrl` cannot recover it; whether this is what the user sees as 230001 is unconfirmed (230001 text never captured, overlay not read by design). The "image reader limit" error is worth watching.
+
+**Code changes.** (1) `StallDetector` also treats `video.ended`, `video.error != null`, `networkState == NETWORK_NO_SOURCE` and paused-without-key-press for 15 s as a stall (any key press resets via `onUserAction`); `ProbeResult` carries `ended/mediaError/noSource`; tests in `StallDetectorTest`. (2) `PlayerActivity.reconnect()` now calls `WebViewHolder.destroy()` and `recreate()` (fresh WebView and renderer, auto-start re-applies) instead of `loadUrl`; the 3-reload cap and the "reconnecting" HUD line are gone because each recreate has a fresh detector (a loop needs successful playback in between). (3) a `probe` line is logged every ~10 s under `fstream-player`.
+
+**Not verified on device:** the rebuild-on-stall path (could not induce a stall: OK/media-pause keys do not pause the player and HOME pauses with a still-advancing currentTime); the `ended/error/NO_SOURCE` branches (unit-tested only); SD streams; the 230001 overlay itself; whether a rebuilt WebView actually recovers from the blank state (a process restart does). A gap remains: if the page loads blank after recovery, `everPlayed` is false so no further recovery fires.

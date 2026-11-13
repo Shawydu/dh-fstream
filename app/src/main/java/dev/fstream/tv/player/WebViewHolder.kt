@@ -54,6 +54,14 @@ object WebViewHolder {
         return w
     }
 
+    /** Throw the WebView (and its renderer) away; the next attach builds a fresh one. Used when a long-lived one stops loading pages. */
+    fun destroy() {
+        val w = wv ?: return
+        (w.parent as? ViewGroup)?.removeView(w)
+        w.destroy()
+        wv = null; ctx = null
+    }
+
     fun detach() {
         val w = wv ?: return
         w.loadUrl("about:blank")

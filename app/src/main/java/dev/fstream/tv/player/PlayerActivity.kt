@@ -53,7 +53,6 @@ class PlayerActivity : ComponentActivity() {
     private var lastStatus = ""
     private var tick = 0
     private val stall = StallDetector()
-    private var reconnecting = false
     private lateinit var source: PlayableSource
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -167,6 +166,7 @@ class PlayerActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val code = event.keyCode
+        stall.onUserAction(SystemClock.elapsedRealtime())
         if (code == KeyEvent.KEYCODE_BACK) {
             if (event.action == KeyEvent.ACTION_UP) handleBack()
             return true // page never sees BACK
@@ -211,7 +211,7 @@ class PlayerActivity : ComponentActivity() {
                 wv.evaluateJavascript(ProbeResult.JS) { r ->
                     val p = ProbeResult.parse(r)
                     lastProbe = p
-                    if (p != null && p.found && !p.paused && p.currentTime > 0) reconnecting = false
+                    if (tick % 40 == 0) Log.i("fstream-player", "probe $p")
                     if (stall.onProbe(p, SystemClock.elapsedRealtime())) reconnect()
                     if (p != null && p.found && p.currentTime > 0 && ttffMs == null) {
                         ttffMs = SystemClock.elapsedRealtime() - loadStartMs
@@ -220,22 +220,21 @@ class PlayerActivity : ComponentActivity() {
             }
             if (tick % 4 == 0) {
                 hud.text = hudText()
-                hud.visibility = if (ProbeResult.hudVisible(lastProbe, errorText != null || reconnecting, options.alwaysShowHud)) View.VISIBLE else View.GONE
+                hud.visibility = if (ProbeResult.hudVisible(lastProbe, errorText != null, options.alwaysShowHud)) View.VISIBLE else View.GONE
             }
             handler.postDelayed(this, 250)
         }
     }
 
+    // A plain reload is not enough: after ~25 min the singleton WebView stopped loading any page (blank, no console) until the process restarted.
     private fun reconnect() {
-        Log.w("fstream-player", "stall detected, reload ${stall.reloads}/$MAX_RELOADS")
-        reconnecting = true; lastProbe = null; errorText = null; pageFinished = false
-        webView?.loadUrl(source.url, source.headers)
+        Log.w("fstream-player", "stall detected, rebuilding WebView and reloading")
+        handler.post { WebViewHolder.destroy(); recreate() }
     }
 
     private fun hudText(): String {
         val p = lastProbe
         val state = when {
-            reconnecting -> "reconnecting… (${stall.reloads}/$MAX_RELOADS)"
             errorText != null -> "error"
             !pageFinished -> "loading"
             p != null && p.videoVisible -> if (p.paused) "paused" else "playing"
@@ -255,7 +254,6 @@ class PlayerActivity : ComponentActivity() {
     }
 
     companion object {
-        const val MAX_RELOADS = 3
         const val AUTO_START_DELAY_MS = 800L
         const val EXTRA_SOURCE = "source"
         const val EXTRA_TITLE = "title"
