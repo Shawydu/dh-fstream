@@ -83,7 +83,7 @@ class StrmFreeAdapterTest {
         assertEquals(1_793_836_800_000L, phi.startEpochMs)
         assertEquals("Philadelphia 76ers", phi.home?.name)
         assertEquals("Detroit Pistons", phi.away?.name)
-        assertEquals(2, phi.sourceRefs.size)
+        assertEquals(1, phi.sourceRefs.size)
         assertEquals(null, all.first { it.id == "redzone" }.home)
     }
 
@@ -94,29 +94,46 @@ class StrmFreeAdapterTest {
         assertTrue(requested.contains("/api/v1/streams?category=basketball"))
     }
 
+    private fun event(extra: String) = ok(
+        """{"streams":[{"stream_key":"k","name":"K","match_timestamp":1,"viewers":1,
+        "iframe":"https://x/iframe",$extra}]}""",
+    )
+
     @Test
-    fun streamsMappedAndOrderedLiveFirst() = runTest {
-        routes["/api/v1/streams"] = ok(fixture("strmfree_streams.json"))
+    fun streamsMergeDedupeAndOrder() = runTest {
+        routes["/api/v1/streams"] = event(
+            """"additional_sources":["https://x/hd",{"embed":"https://x/extra","name":"Alt"},{"url":"https://x/q","quality":"4K"},{"foo":1},""]""",
+        )
         val ev = adapter().events(EventFilter.ALL).first()
-        routes["/api/v1/sources/${ev.id}"] = ok(
-            """{"stream_key":"k","sources":[
+        routes["/api/v1/sources/k"] = ok(
+            """{"sources":[
               {"quality":"SD","url":"https://x/sd","live":true},
               {"quality":"FHD","url":"https://x/fhd","live":false},
               {"quality":"HD","url":"https://x/hd","live":true},
               {"quality":"HD","url":"","live":true}]}""",
         )
         val s = adapter().streams(ev)
-        assertEquals(listOf("SD", "HD", "FHD"), s.map { it.id })
-        assertEquals(listOf(1, 2, 3), s.map { it.number })
-        assertEquals(listOf(false, true, true), s.map { it.hd })
+        assertEquals(
+            listOf("https://x/sd", "https://x/hd", "https://x/fhd", "https://x/q", "https://x/iframe", "https://x/extra"),
+            s.map { it.playable.url },
+        )
         assertEquals("FHD · not live yet", s[2].sourceLabel)
+        assertEquals(listOf(1, 2, 3, 4, 5, 6), s.map { it.number })
+        assertEquals("Alt", s.first { it.playable.url == "https://x/extra" }.id)
+        assertEquals("4K", s.first { it.playable.url == "https://x/q" }.id)
         assertEquals(SourceKind.EMBED, s[0].playable.kind)
-        assertEquals("https://x/sd", s[0].playable.url)
     }
 
     @Test
-    fun sources404IsEmpty() = runTest {
-        routes["/api/v1/streams"] = ok(fixture("strmfree_streams.json"))
+    fun sources404StillReturnsIframe() = runTest {
+        routes["/api/v1/streams"] = event(""""additional_sources":[]""")
+        val ev = adapter().events(EventFilter.ALL).first()
+        assertEquals(listOf("https://x/iframe"), adapter().streams(ev).map { it.playable.url })
+    }
+
+    @Test
+    fun sources404WithNoIframeIsEmpty() = runTest {
+        routes["/api/v1/streams"] = ok(fixture("strmfree_streams.json").replace("\"iframe\"", "\"x\""))
         val ev = adapter().events(EventFilter.ALL).first()
         assertTrue(adapter().streams(ev).isEmpty())
     }

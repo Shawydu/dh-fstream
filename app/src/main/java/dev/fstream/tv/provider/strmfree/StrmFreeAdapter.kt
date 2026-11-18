@@ -17,6 +17,10 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
@@ -48,7 +52,9 @@ class StrmFreeAdapter(
         @SerialName("stream_key") val streamKey: String? = null,
         @SerialName("match_timestamp") val matchTimestamp: Long? = null,
         @SerialName("thumbnail_url") val thumbnailUrl: String? = null,
-        val sources: List<SourceDto>? = null,
+        val iframe: String? = null,
+        @SerialName("additional_sources") val additionalSources: List<JsonElement>? = null,
+        val viewers: Int? = null,
         val team1: TeamDto? = null,
         val team2: TeamDto? = null,
     )
@@ -71,7 +77,8 @@ class StrmFreeAdapter(
         val today = java.time.Instant.ofEpochMilli(clock()).atZone(zone).toLocalDate()
         return raw.filter {
             when (filter) {
-                EventFilter.LIVE -> it.sources.orEmpty().any { s -> s.live == true }
+                // The listing no longer carries per-source live flags: live = already started and has viewers.
+                EventFilter.LIVE -> (it.matchTimestamp ?: 0L) * 1000 <= clock() && (it.viewers ?: 0) > 0
                 EventFilter.TODAY -> java.time.Instant.ofEpochMilli((it.matchTimestamp ?: 0L) * 1000)
                     .atZone(zone).toLocalDate() == today
                 EventFilter.ALL -> true
@@ -80,27 +87,41 @@ class StrmFreeAdapter(
     }
 
     override suspend fun streams(event: Event): List<Stream> {
-        val sources = try {
+        val api = try {
             get("/api/v1/sources/${event.id}", SourcesDto.serializer()).sources.orEmpty()
         } catch (e: NotFound) {
-            return emptyList()
+            emptyList()
+        } catch (e: ProviderException) {
+            if (event.sourceRefs.isEmpty()) throw e else emptyList()
         }
-        val order = listOf("SD", "HD", "FHD", "4K")
-        return sources
+        // Nothing is dropped except blank URLs; API entries come first so their live flag wins on duplicate URLs.
+        val all = (api + event.sourceRefs.map { SourceDto(it.source, it.id, null) })
             .filter { !it.url.isNullOrBlank() }
+            .distinctBy { it.url }
+        val order = listOf("SD", "HD", "FHD", "4K")
+        return all
             .sortedWith(compareBy({ it.live != true }, { order.indexOf(it.quality).let { i -> if (i < 0) order.size else i } }))
             .mapIndexed { i, s ->
-                val q = s.quality ?: ""
+                val q = s.quality?.takeIf { it.isNotBlank() } ?: "Source ${i + 1}"
                 Stream(
                     id = q,
                     number = i + 1,
                     language = "",
                     hd = q != "SD",
                     viewers = 0,
-                    sourceLabel = q + if (s.live != true) " · not live yet" else "",
+                    sourceLabel = q + if (s.live == false) " · not live yet" else "",
                     playable = PlayableSource(SourceKind.EMBED, s.url!!),
                 )
             }
+    }
+
+    // Lenient: a string is a URL; an object may use url/iframe/embed plus quality/name/label.
+    private fun JsonElement.toRef(): SourceRef? {
+        if (this is JsonPrimitive) return contentOrNull?.takeIf { it.isNotBlank() }?.let { SourceRef("", it) }
+        val o = this as? JsonObject ?: return null
+        fun f(k: String) = (o[k] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+        val url = f("url") ?: f("iframe") ?: f("embed") ?: return null
+        return SourceRef(f("quality") ?: f("name") ?: f("label") ?: "", url)
     }
 
     private fun StreamDto.toEvent(): Event? {
@@ -114,9 +135,8 @@ class StrmFreeAdapter(
             popular = false,
             home = team1?.toTeam(),
             away = team2?.toTeam(),
-            sourceRefs = sources.orEmpty().mapNotNull {
-                if (it.quality.isNullOrBlank() || it.url.isNullOrBlank()) null else SourceRef(it.quality, it.url)
-            },
+            sourceRefs = listOfNotNull(iframe?.takeIf { it.isNotBlank() }?.let { SourceRef("", it) }) +
+                additionalSources.orEmpty().mapNotNull { it.toRef() },
         )
     }
 
