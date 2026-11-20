@@ -128,19 +128,25 @@ class PlayerActivity : ComponentActivity() {
     }
 
 
-    // Once-per-load center tap so the viewer doesn't have to press OK; skipped if the probe already sees playing video.
-    private val autoStart = Runnable {
+    // After load: until the probe sees playing video, try video.play() then a center tap, retrying (bounded ~60s) because
+    // ad click-traps swallow the first taps and players often render their play button after onPageFinished.
+    private var autoAttempts = 0
+    private val autoStart: Runnable = Runnable {
         webView?.evaluateJavascript(ProbeResult.JS) { r ->
             val p = ProbeResult.parse(r)
-            if (p != null && p.videoVisible && !p.paused) return@evaluateJavascript
-            okStrategies.tapCenter()
-            lastStatus = "auto-start tap"
+            if (p == null || !p.videoVisible || p.paused) {
+                okStrategies.jsPlay { }
+                okStrategies.tapCenter()
+                lastStatus = "auto-start try ${autoAttempts + 1}"
+            } // else playing (maybe a pre-roll ad): leave it, but keep watching in case it ends back on the play button
+            if (++autoAttempts < AUTO_START_MAX_TRIES) handler.postDelayed(autoStart, AUTO_START_RETRY_MS)
         }
     }
 
     private fun scheduleAutoStart() {
         if (!options.autoStart) return
         handler.removeCallbacks(autoStart)
+        autoAttempts = 0
         handler.postDelayed(autoStart, AUTO_START_DELAY_MS)
     }
 
@@ -167,6 +173,7 @@ class PlayerActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val code = event.keyCode
         stall.onUserAction(SystemClock.elapsedRealtime())
+        handler.removeCallbacks(autoStart) // user is driving; stop auto retries
         if (code == KeyEvent.KEYCODE_BACK) {
             if (event.action == KeyEvent.ACTION_UP) handleBack()
             return true // page never sees BACK
@@ -255,6 +262,8 @@ class PlayerActivity : ComponentActivity() {
 
     companion object {
         const val AUTO_START_DELAY_MS = 800L
+        const val AUTO_START_RETRY_MS = 3000L
+        const val AUTO_START_MAX_TRIES = 20
         const val EXTRA_SOURCE = "source"
         const val EXTRA_TITLE = "title"
         const val EXTRA_OPTIONS = "options"
