@@ -29,6 +29,7 @@ class StrmFreeAdapterTest {
     private fun adapter() = StrmFreeAdapter(
         OkHttpClient.Builder().readTimeout(2, TimeUnit.SECONDS).build(),
         server.url("/").toString().trimEnd('/'),
+        server.url("/").toString().trimEnd('/'),
         clock = { now },
     )
 
@@ -117,11 +118,27 @@ class StrmFreeAdapterTest {
             listOf("https://x/sd", "https://x/hd", "https://x/fhd", "https://x/q", "https://x/iframe", "https://x/extra"),
             s.map { it.playable.url },
         )
-        assertEquals("FHD · not live yet", s[2].sourceLabel)
+        assertEquals("FHD", s[2].sourceLabel) // game started (ts=1): stale live=false is not shown
         assertEquals(listOf(1, 2, 3, 4, 5, 6), s.map { it.number })
         assertEquals("Alt", s.first { it.playable.url == "https://x/extra" }.id)
         assertEquals("4K", s.first { it.playable.url == "https://x/q" }.id)
         assertEquals(SourceKind.EMBED, s[0].playable.kind)
+    }
+
+    @Test
+    fun playerBackupsAppendedAndPreferredOverNotLiveDirect() = runTest {
+        routes["/api/v1/streams"] = event(""""additional_sources":[]""")
+        val ev = adapter().events(EventFilter.ALL).first().copy(category = "hockey")
+        routes["/api/v1/sources/k"] = ok("""{"sources":[{"quality":"HD","url":"https://x/d","live":false}]}""")
+        routes["/player/hockey/k"] = ok(
+            """const BACKUP_SOURCES = [{"name": "ESPN+", "quality": "HD", "url": "https://b/hd"}, {"name": "ESPN+", "quality": "SD", "url": "https://b/sd"}];""",
+        )
+        val s = adapter().streams(ev)
+        assertEquals(listOf("https://b/hd", "https://b/sd", "https://x/d", "https://x/iframe"), s.map { it.playable.url })
+        assertEquals("ESPN+ HD", s[0].sourceLabel)
+        // player page failure is swallowed
+        routes.remove("/player/hockey/k")
+        assertEquals(listOf("https://x/d", "https://x/iframe"), adapter().streams(ev).map { it.playable.url })
     }
 
     @Test

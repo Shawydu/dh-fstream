@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -28,6 +29,7 @@ import java.io.IOException
 class StrmFreeAdapter(
     private val client: OkHttpClient,
     baseUrl: String = "https://strmfree.pk",
+    playerUrl: String = "https://strmfree.st",
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ProviderAdapter {
@@ -35,6 +37,7 @@ class StrmFreeAdapter(
     override val displayName = "StreamFree"
 
     private val base = baseUrl.trimEnd('/')
+    private val playerBase = playerUrl.trimEnd('/')
 
     @Serializable
     private data class CategoriesDto(val categories: List<String>? = null)
@@ -58,6 +61,9 @@ class StrmFreeAdapter(
         val team1: TeamDto? = null,
         val team2: TeamDto? = null,
     )
+
+    @Serializable
+    private data class BackupDto(val name: String? = null, val quality: String? = null, val url: String? = null)
 
     @Serializable
     private data class StreamsDto(val streams: List<StreamDto>? = null)
@@ -95,7 +101,9 @@ class StrmFreeAdapter(
             if (event.sourceRefs.isEmpty()) throw e else emptyList()
         }
         // Nothing is dropped except blank URLs; API entries come first so their live flag wins on duplicate URLs.
-        val all = (api + event.sourceRefs.map { SourceDto(it.source, it.id, null) })
+        // Backups are marked live (the player page only shows them once the game is about to start), so they
+        // sort ahead of a direct feed still flagged live:false.
+        val all = (api + backups(event) + event.sourceRefs.map { SourceDto(it.source, it.id, null) })
             .filter { !it.url.isNullOrBlank() }
             .distinctBy { it.url }
         val order = listOf("SD", "HD", "FHD", "4K")
@@ -109,10 +117,28 @@ class StrmFreeAdapter(
                     language = "",
                     hd = q != "SD",
                     viewers = 0,
-                    sourceLabel = q + if (s.live == false) " · not live yet" else "",
+                    sourceLabel = q + if (s.live == false && event.startEpochMs > clock()) " · not live yet" else "",
                     playable = PlayableSource(SourceKind.EMBED, s.url!!),
                 )
             }
+    }
+
+    // Third-party "Back Up" embeds are injected only into the /player HTML page, never the API. Optional: any failure -> none.
+    private suspend fun backups(event: Event): List<SourceDto> {
+        if (event.startEpochMs - 2 * 60_000 > clock()) return emptyList()
+        return try {
+            withContext(dispatcher) {
+                val request = Request.Builder().url("$playerBase/player/${event.category}/${event.id}").build()
+                val html = client.newCall(request).execute().use { if (it.isSuccessful) it.body?.string() else null }
+                    ?: return@withContext emptyList()
+                val array = BACKUP_RE.find(html)?.groupValues?.get(1) ?: return@withContext emptyList()
+                json.decodeFromString(ListSerializer(BackupDto.serializer()), array).map {
+                    SourceDto(listOfNotNull(it.name, it.quality).joinToString(" "), it.url, true)
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     // Lenient: a string is a URL; an object may use url/iframe/embed plus quality/name/label.
@@ -169,6 +195,7 @@ class StrmFreeAdapter(
     }
 
     companion object {
+        private val BACKUP_RE = Regex("""BACKUP_SOURCES\s*=\s*(\[.*?]);""")
         private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
     }
 }
